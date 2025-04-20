@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Smart Password Reuse Detector</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #c0d6e4, #e9c4ff);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    #passwordChecker {
+      background-color: #ffffff;
+      padding: 40px;
+      border-radius: 50px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+      width: 100%;
+      max-width: 450px;
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 25px;
+      color: #333;
+    }
+
+    input[type="password"] {
+      width: 100%;
+      padding: 14px;
+      margin-bottom: 20px;
+      font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 30px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      font-size: 1em;
+      background-color: #5a67d8;
+      color: #fff;
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+      margin-bottom: 12px;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #434190;
+    }
+
+    .alert {
+      margin-top: 15px;
+      padding: 14px;
+      border-radius: 30px;
+      font-weight: bold;
+    }
+
+    .safe {
+      background-color: #d4fdd4;
+      color: #1a472a;
+    }
+
+    .warn {
+      background-color: #ffd6d9;
+      color: #7a1f1f;
+    }
+
+    .reset {
+      background-color: #f6ad55;
+    }
+
+    .reset:hover {
+      background-color: #dd6b20;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="passwordChecker">
+    <h2>🔐 Password Reuse Checker</h2>
+    <input type="password" id="passwordInput" placeholder="Enter your password">
+    <button onclick="checkPassword()">Check Reuse</button>
+    <button class="reset" onclick="resetHistory()">Reset History</button>
+    <div id="result" class="alert" style="display:none;"></div>
+  </div>
+
+  <script>
+    async function hashPassword(password) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function checkPassword() {
+      const password = document.getElementById("passwordInput").value;
+      const resultDiv = document.getElementById("result");
+
+      if (!password) {
+        resultDiv.style.display = "block";
+        resultDiv.className = "alert warn";
+        resultDiv.innerText = "⚠ Please enter a password.";
+        return;
+      }
+
+      const hash = await hashPassword(password);
+      const storedHashes = JSON.parse(localStorage.getItem("passwordHashes") || "[]");
+
+      if (storedHashes.includes(hash)) {
+        resultDiv.className = "alert warn";
+        resultDiv.innerText = "⚠ Warning: This password has been used before!";
+      } else {
+        storedHashes.push(hash);
+        localStorage.setItem("passwordHashes", JSON.stringify(storedHashes));
+        resultDiv.className = "alert safe";
+        resultDiv.innerText = "✅ This is a new password.";
+      }
+
+      resultDiv.style.display = "block";
+    }
+
+    function resetHistory() {
+      localStorage.removeItem("passwordHashes");
+      document.getElementById("result").style.display = "none";
+      alert("✅ Password reuse history cleared.");
+    }
+  </script>
+
+</body>
+</html>
